@@ -21,6 +21,7 @@ class User(Base):
 
     id = Column(Integer(), primary_key=True)
     name = Column(String())
+    created_at = Column(DateTime(), server_default=func.now())
 
     @validates('name')
     def check_name(self, key, string):
@@ -42,6 +43,7 @@ class Game(Base):
     id = Column(Integer(), primary_key=True)
     result = Column(String())
     user_id = Column(Integer(), ForeignKey('users.id'))
+    created_at = Column(DateTime(), server_default=func.now())
 
 
     @classmethod
@@ -64,6 +66,7 @@ class Note(Base):
     content = Column(String())
     rating = Column(Integer())
     game_id = Column(Integer, ForeignKey('games.id'))
+    created_at = Column(DateTime(), server_default=func.now())
 
     
 
