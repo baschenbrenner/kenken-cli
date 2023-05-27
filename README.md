@@ -9,10 +9,10 @@ A game wil have many groupings. For a grouping to be sensible, the cells will ha
 A user will be able to sign in and access previous results and play a new game or pick up on a saved game.
 
 Python app for kenken 4x4 puzzle
-1. Randomly build a 4x4 structure
-2. Randomly create groupings 2, 3, and 4, with remainders filled in
-3. Figure out how to show darkened borders (in interior) based on random groupings in 2
-4. Figure out how to show the rule (3x, 2/, etc.) in the top left box based on the random groupings
+1. Randomly build a 4x4 structure [x]
+2. Randomly create groupings of 2's and 3's with remainders filled in [x]
+3. Figure out how to show board [x]
+4. Figure out how to show the rule (3x, 2/, etc.) in the top left box based on the random groupings [x]
 5. Program suite of input tools that allows a person to enter a digit into a box, or remove a digit
 6. Program a has won function that evaluates the win and gives the option to reset and start again.
 
