@@ -3,7 +3,9 @@ from sqlalchemy import ForeignKey, Table, Column, Integer, String, DateTime, Met
 from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from helpers import random_50, random_33, analyze_left
 import random
+import json
 
 
 convention = {
@@ -26,15 +28,18 @@ class User(Base):
 
     @validates('name')
     def check_name(self, key, string):
-        print(key)
-        print(string)
+        users = session.query(User).all()
+        if string in [u.name for u in users]:
+            raise ValueError("That user name is already taken")
+        if string == '':
+            raise ValueError("You must provide a user name")
         return string
     
 
     games = relationship('Game', backref=backref('user'))
 
     def __repr__(self):
-        return f'<#User(id={self.id} name={self.name} games={self.games})>,'
+        return f'<#User(id={self.id} name={self.name} games={[g.id for g in self.games]})>,'
 
 
 
@@ -44,8 +49,15 @@ class Game(Base):
     id = Column(Integer(), primary_key=True)
     result = Column(String())
     user_id = Column(Integer(), ForeignKey('users.id'))
+    groupings = Column(String())
     created_at = Column(DateTime(), server_default=func.now())
+    board = Column(String())
 
+    def __init__(self, user_id):
+        self.board = json.dumps(self.create_board()[0])
+        self.groupings = json.dumps(self.produce_groupings())
+        self.user_id = user_id
+        self.result="created"
 
     @classmethod
     def create_and_add_to_cli(self, name, cli):
@@ -164,6 +176,151 @@ class Game(Base):
         self.board_rep = board_rep
         return (board, board_rep)
 
+    def produce_groupings(self):
+        group1 = [1]
+
+        #groupings - start with 1, try 2, if not 2 then add 5, then try 9  if 9, then done, if not 9 try 6. else try 5, 
+
+        if random_50():
+            group1.append(2)
+            if random_33():
+                group1.append(5)
+            elif random_33():
+                group1.append(6)
+            else:
+                if random_33():
+                    group1.append(3)
+        else:
+            group1.append(5)
+            if random_33():
+                group1.append(9)
+
+
+
+        group2 = []
+        if 2 in group1:
+            if 3 in group1:
+                group2.append(4)
+                group2.append(8)
+            else:
+                group2.append(3)
+                if random_50():
+                    group2.append(4)
+                else:
+                    group2.append(7)
+        else:
+            group2.append(2)
+            if random_50():
+                group2.append(3)
+            else:
+                group2.append(6)
+        result = [group1,group2]
+        flattened = [num for sublist in result for num in sublist]
+        group3=[]
+        if 3 not in flattened:
+            group3.append(3)
+            group3.append(4)
+            if random_50():
+                if 7 not in flattened:
+                    group3.append(7)
+        elif 4 not in flattened:
+            group3.append(4)
+            group3.append(8)
+        elif 5 not in flattened:
+            group3.append(5)
+            if 6 not in flattened:
+                group3.append(6)
+            else:
+                group3.append(9)
+        elif 6 not in flattened:
+            group3.append(6)
+            group3.append(7)
+
+
+
+        result = [group1,group2,group3]
+        flattened = [num for sublist in result for num in sublist]
+
+        group4=[]
+        if 5 not in flattened:
+            group4.append(5)
+            if 6 not in flattened:
+                group4.append(6)
+            else:
+                group4.append(9)
+        elif 6 not in flattened:
+            group4.append(6)
+            if 7 not in flattened:
+                group4.append(7)
+            else:
+                group4.append(10)
+        elif 7 not in flattened:
+            group4.append(7)
+            if 8 not in flattened:
+                group4.append(8)
+            else:
+                group4.append(11)
+        elif 8 not in flattened:
+            group4.append(8)
+            group4.append(12)
+            
+
+        result = [group1,group2,group3, group4]
+        flattened = [num for sublist in result for num in sublist]
+        # print(sorted(flattened))
+
+        group5=[]
+        if 9 not in flattened:
+            group5.append(9)
+            if 10 not in flattened:
+                group5.append(10)
+                group5.append(14)
+            else:
+                group5.append(13)
+        elif 10 not in flattened:
+            group5.append(10)
+            if 11 not in flattened:
+                group5.append(11)
+            else:
+                group5.append(14)
+
+
+        result = [group1,group2,group3, group4, group5]
+        flattened = [num for sublist in result for num in sublist]
+
+        group6=[]
+        if 11 not in flattened:
+            group6.append(11)
+            if 12 not in flattened:
+                group6.append(12)
+            else:
+                group6.append(15)
+        elif 12 not in flattened:
+            group6.append(12)
+            group6.append(16)
+
+        result = [group1,group2,group3, group4, group5, group6]
+        flattened = [num for sublist in result for num in sublist]
+
+        left =[]
+        for x in [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]:
+                
+            if x not in flattened:
+                left.append(x)
+        
+        final_groupings = analyze_left(left)
+        for l in final_groupings:
+            result.append(l)
+
+        # flattened = [num for sublist in result for num in sublist]
+        # if len(flattened)==len(set(flattened)):
+        #     print("TRUE!")
+        # else:
+        #     print("Something went wrong")
+        if [] in result:
+            result.remove([])
+        return result
+    
     notes = relationship('Note', backref=backref('game'))
 
     def __repr__(self):
@@ -185,18 +342,3 @@ class Note(Base):
         return f'<#Note(id={self.id} content={self.content} game_id={self.game_id} )>,'
 
 
-# class Review(Base):
-#     # id:Integer,
-#     # Comment: String
-#     # Name: string
-#     # Book_id:(Foreign Key)
-
-#     __tablename__ = 'reviews'
-
-#     id = Column(Integer(), primary_key=True)
-#     comment = Column(String())
-#     name = Column(String())
-#     book_id = Column(Integer, ForeignKey('books.id'))
-
-#     def __repr__(self):
-#      return f'<#Review(id={self.id} name={self.name} comment={self.comment})>,'

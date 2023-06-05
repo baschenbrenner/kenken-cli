@@ -13,6 +13,7 @@ Python app for kenken 4x4 puzzle
 2. Randomly create groupings of 2's and 3's with remainders filled in [x]
 3. Figure out how to show board [x]
 4. Figure out how to show the rule (3x, 2/, etc.) in the top left box based on the random groupings [x]
-5. Program suite of input tools that allows a person to enter a digit into a box, or remove a digit
+5. Program suite of input tools that allows a person to enter a digit into a box, edit, or remove a digit
 6. Program a has won function that evaluates the win and gives the option to reset and start again.
+7. Figure out a way to track stats for a user, including games attempted, games won, and (stretch) time for each win
 

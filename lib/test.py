@@ -658,7 +658,7 @@ pairs = random_operations(board, groupings)
 
 print(pairs)
 
-print_board(groupings, pairs)
+produce_board(groupings, pairs)
 
 
 
