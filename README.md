@@ -17,3 +17,19 @@ Python app for kenken 4x4 puzzle
 6. Program a has won function that evaluates the win and gives the option to reset and start again.
 7. Figure out a way to track stats for a user, including games attempted, games won, and (stretch) time for each win
 
+
+Expected flow for CLI:
+1) welcome message, prompt for name
+2) if name already exists ask if they want to continue as that user
+3) if name doesn't exist, create a new user and print explanations
+
+from 2)
+ if yes, print list of options
+ if no, exit from game
+
+list of options
+play game, 
+review game,
+continue game
+
+

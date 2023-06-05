@@ -24,17 +24,31 @@ class User(Base):
 
     id = Column(Integer(), primary_key=True)
     name = Column(String())
+    special = Column(String())
     created_at = Column(DateTime(), server_default=func.now())
 
-    @validates('name')
+    def __init__(self, name="", special=""):
+        self.name = name
+        self.special=special.lower()
+
+
+
+    @validates('name', 'special')
     def check_name(self, key, string):
         users = session.query(User).all()
-        if string in [u.name for u in users]:
-            raise ValueError("That user name is already taken")
-        if string == '':
-            raise ValueError("You must provide a user name")
-        return string
-    
+        if key == 'name':
+            if string in [u.name for u in users]:
+                raise ValueError("That user name is already taken")
+            if string == '':
+                raise ValueError("You must provide a user name")
+            return string
+        elif key == "special":
+            if string == '':
+                raise ValueError("You must provide a special word")
+            if len(string) < 4:
+                raise ValueError("Your special word must be longer than 3 letters")
+            return string
+        
 
     games = relationship('Game', backref=backref('user'))
 
@@ -52,20 +66,22 @@ class Game(Base):
     groupings = Column(String())
     created_at = Column(DateTime(), server_default=func.now())
     board = Column(String())
+    pairs = Column(String())
+    solution_dict=Column(String())
 
     def __init__(self, user_id):
-        self.board = json.dumps(self.create_board()[0])
-        self.groupings = json.dumps(self.produce_groupings())
+        board_tuple = self.create_board()
+        self.board = json.dumps(board_tuple[0])
+        self.solution_dict=json.dumps(board_tuple[1])
+        groups = self.produce_groupings()
+        self.groupings = json.dumps(groups)
         self.user_id = user_id
         self.result="created"
+        self.pairs = json.dumps(self.random_operations(board_tuple, groups))
 
     @classmethod
-    def create_and_add_to_cli(self, name, cli):
-        game = Game(result="in progress")
-        session.add(game)
-        session.commit()
-        cli.games.append(game)
-    
+    #create_board produces a tuple with board (array of arrays) and board dict
+
     def create_board(self):
         def find_missing(arr):
             start = [1,2,3,4]
@@ -175,6 +191,8 @@ class Game(Base):
         self.board = board
         self.board_rep = board_rep
         return (board, board_rep)
+
+    #produce groupings produces an array of arrays
 
     def produce_groupings(self):
         group1 = [1]
@@ -321,6 +339,66 @@ class Game(Base):
             result.remove([])
         return result
     
+    #random operations produces an array of tuples with operation and result
+
+    def random_operations(self, tup, groups):
+        result=[]
+        options =["+","-","x","/"]
+        counter = 0
+        while counter < len(groups):
+        #   print(groups[counter])
+            if len(groups[counter]) == 1:
+                result.append((" ", tup[1][groups[counter][0]]))
+            elif len(groups[counter]) == 2:
+                op = random.choice(options)
+                if op == "+":
+                    end = tup[1][groups[counter][0]] + tup[1][groups[counter][1]]
+                    result.append(("+", end))
+                elif op == "-":
+                    if tup[1][groups[counter][0]] - tup[1][groups[counter][1]] > 0:
+                            end = tup[1][groups[counter][0]] - tup[1][groups[counter][1]]
+                            result.append(("-", end))
+                    else:
+                        end = tup[1][groups[counter][1]] - tup[1][groups[counter][0]]
+                        result.append(("-", end))
+                elif op == "x":
+                    end = tup[1][groups[counter][0]] * tup[1][groups[counter][1]]
+                    result.append(("x", end))
+                elif op == "/":
+                    if tup[1][groups[counter][0]]/tup[1][groups[counter][1]] == 2:
+                        end = 2
+                        result.append(("/", end))
+                    elif tup[1][groups[counter][1]]/tup[1][groups[counter][0]] == 2:
+                        end = 2
+                        result.append(("/", end))
+                    elif tup[1][groups[counter][1]]/tup[1][groups[counter][0]] == 3:
+                        end = 3
+                        result.append(("/", end))
+                    elif tup[1][groups[counter][0]]/tup[1][groups[counter][1]] == 3:
+                        end = 3
+                        result.append(("/", end))
+                    elif tup[1][groups[counter][1]]/tup[1][groups[counter][0]] == 4:
+                        end = 4
+                        result.append(("/", end))
+                    elif tup[1][groups[counter][0]]/tup[1][groups[counter][1]] == 4:
+                        end = 4
+                        result.append(("/", end))
+                    else:
+                        end = tup[1][groups[counter][0]] * tup[1][groups[counter][1]]
+                        result.append(("x", end))
+            elif len(groups[counter]) == 3:
+                if random_50():
+                    end = tup[1][groups[counter][0]] * tup[1][groups[counter][1]]*tup[1][groups[counter][2]]
+                    result.append(("x", end))
+                else:
+                    end = tup[1][groups[counter][0]] + tup[1][groups[counter][1]]+tup[1][groups[counter][2]]
+                    result.append(("+", end))
+
+            counter += 1
+
+        return result
+    
+
     notes = relationship('Note', backref=backref('game'))
 
     def __repr__(self):
