@@ -53,7 +53,7 @@ class User(Base):
     games = relationship('Game', backref=backref('user'))
 
     def __repr__(self):
-        return f'<#User(id={self.id} name={self.name} games={[g.id for g in self.games]})>,'
+        return f'#<User(id={self.id} name={self.name} games={[g.id for g in self.games]})>,'
 
 
 
@@ -65,6 +65,7 @@ class Game(Base):
     user_id = Column(Integer(), ForeignKey('users.id'))
     groupings = Column(String())
     created_at = Column(DateTime(), server_default=func.now())
+    updated_at = Column(DateTime(), onupdate=func.now())
     board = Column(String())
     pairs = Column(String())
     solution_dict=Column(String())
@@ -399,10 +400,13 @@ class Game(Base):
         return result
     
 
+    def duration(self):
+        return (self.updated_at-self.created_at).seconds
+    
     notes = relationship('Note', backref=backref('game'))
 
     def __repr__(self):
-        return f'<#Game(id={self.id} result={self.result} user={self.user})>'
+        return f'#<Game(id={self.id} result={self.result} user={self.user})>'
 
 
 class Note(Base):
@@ -410,13 +414,12 @@ class Note(Base):
 
     id = Column(Integer(), primary_key=True)
     content = Column(String())
-    rating = Column(Integer())
     game_id = Column(Integer, ForeignKey('games.id'))
     created_at = Column(DateTime(), server_default=func.now())
 
     
 
     def __repr__(self):
-        return f'<#Note(id={self.id} content={self.content} game_id={self.game_id} )>,'
+        return f'#<Note(id={self.id} content={self.content} game_id={self.game_id} )>,'
 
 

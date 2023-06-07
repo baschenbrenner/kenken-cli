@@ -3,7 +3,7 @@
 from models import User, Game, Note
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from helpers import produce_board
+from helpers import produce_board, check_num, board_in_play, games_menu
 import json
 
 
@@ -15,7 +15,7 @@ class CLI:
         self.games = [g for g in session.query(Game)]
         self.notes = [n for n in session.query(Note)]
         self.user_info = self.get_name()
-        self.main_menu()
+        self.main_menu(self.user_info)
         # self.start()
 
     # Was going to make a dict mapped to choices, but seems like we would still need an if
@@ -58,12 +58,14 @@ class CLI:
 
         return new_user
         #error handling for weird input?
-    def main_menu(self):
+
+
+    def main_menu(self, user):
         choice = ''
-        while (not CLI.valid_choice(['new', 'prev', 'exit'], choice)):
+        while (not CLI.valid_choice(['new', 'prev', 'exit', 'users'], choice)):
             print('\033[1;32;40m|To play a new game enter "new"|\n')
             print('\033[1;32;40m|To see previous games enter "prev"|\n')
-            print('\033[1;32;40m|To exit type "exit" "prev"|\033[0;37;40m \n')
+            print('\033[1;32;40m|To exit type "exit"|\033[0;37;40m \n')
             choice = input("Type your choice here: ")
             if choice == "exit":
                 print(f"Goodbye {self.user_info.name}!")
@@ -74,9 +76,108 @@ class CLI:
                 session.add(new_game)
                 session.commit()
                 produce_board(json.loads(new_game.groupings), json.loads(new_game.pairs))
-        print("\033[0;37;40m ***************************")
-        print("Where would you like to play?")
+                self.play_game(new_game.id)
+            if choice == "prev":
+                games = session.query(Game).filter_by(user_id=user.id).all()
+                print(" ID |   RESULT   | TIME (s) ")
+                for g in games:
+                    result_str = " " + g.result
+                    length_of_str = len(result_str)
+                    final_str = result_str + " "*(12-length_of_str)
+                    id = str(g.id)+" "
+                    length_of_id = len(id)
+                    final_string = " "*(4-len(id))+id+"|"
+                    if g.duration() == 0 or g.duration() == 1:
+                        print(final_string+final_str+"|       N/A")
+                    else:
+                        dur = str(g.duration())+" "
+                        length_of_dur = len(dur)
+                        last_string = " "*(10-length_of_dur) + dur
+                        print(final_string+final_str+"|"+last_string)
+                choice = games_menu()
+                quit()
+                #retrieve all games
+                #print out all games
+                #print out individual game board and existing notes
+                #add a note to a game
+                #go back to main menu
+                pass
+        
         quit()
+
+    def play_game(self, game_id):
+        #load game locally
+        found_game = session.query(Game).filter_by(id=game_id).first()
+
+        solution = {}
+        counter = 1 
+        while (counter < 17):
+            solution[counter]=" "
+            counter+=1
+
+        print("\033[0;37;40m ***************************")
+        in_progress = True
+        found_game.result = "in progress"
+        session.add(found_game)
+        session.commit()
+        gr = json.loads(found_game.groupings)
+        pa = json.loads(found_game.pairs)
+
+        while in_progress:
+            choice=None
+            while (not choice):
+                choice = input("What cell number would you like to play in (use the red grid for reference): ")
+                if choice == 'q':
+                    quit()
+                choice = check_num(choice)
+               
+            if solution.get(choice) == " ":   
+                print("What number will you place here?")
+                num = input("Type your choice here: ")
+                #needs error handling
+                solution[choice]=int(num)
+                board_in_play(gr, pa, solution)
+                if " " not in solution.values():
+                    from_db = json.loads(found_game.solution_dict)
+                    result = "won"
+                    for k in solution.keys():
+                        if solution[k] != from_db[str(k)]:
+                            result = "lost"
+                    if result == "won":
+                        found_game.result = "won"
+                        print("\033[0;37;41mYOU WON!\033[1;37;40m")
+                        
+                    else:
+                        found_game.result = "lost"
+                    session.add(found_game)
+                    session.commit()
+                    self.main_menu(self.user_info)
+            elif solution.get(choice) == None:
+                print("That space does not exist!")
+                choice=None  
+            else:
+                print('\033[1;32;40m|To delete entry enter "del"|\n')
+                print('\033[1;32;40m|To change entry enter "ch"|\n')
+                print('\033[1;32;40m|To go back to cell selection type "sel"|\033[0;37;40m \n')
+                play = input(f"What would you like to do in cell {choice}: ")
+                if play == "del":
+                    solution[choice]=' '
+                    board_in_play(gr, pa, solution)
+                if play == "ch":
+                    print("What number will you change this cell to?")
+                    num = input("Type your choice here: ")
+                    solution[choice]=int(num)
+                    board_in_play(gr, pa, solution)
+                    if " " not in solution.values():
+                        if solution == json.loads(found_game.solution_dict):
+                            found_game.result = "won"
+                        else:
+                            #create a method to evaluate their board to determine if it is a logically sound alternative solution
+                            found_game.result = "lost"
+                        session.add(found_game)
+                        session.commit()
+                        quit()
+        
         
 
    

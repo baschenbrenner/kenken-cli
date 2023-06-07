@@ -1,8 +1,8 @@
-"""create tables
+"""make db with tables
 
-Revision ID: abd52297a937
-Revises: f761e5f2c8ff
-Create Date: 2023-05-26 20:31:59.000479
+Revision ID: e58440bd160d
+Revises: 
+Create Date: 2023-06-07 08:47:30.747464
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'abd52297a937'
-down_revision = 'f761e5f2c8ff'
+revision = 'e58440bd160d'
+down_revision = None
 branch_labels = None
 depends_on = None
 
@@ -21,6 +21,7 @@ def upgrade() -> None:
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
+    sa.Column('special', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -28,14 +29,18 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('result', sa.String(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('groupings', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('board', sa.String(), nullable=True),
+    sa.Column('pairs', sa.String(), nullable=True),
+    sa.Column('solution_dict', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_games_user_id_users')),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('notes',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('content', sa.String(), nullable=True),
-    sa.Column('rating', sa.Integer(), nullable=True),
     sa.Column('game_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.ForeignKeyConstraint(['game_id'], ['games.id'], name=op.f('fk_notes_game_id_games')),
