@@ -3,7 +3,7 @@
 from models import User, Game, Note
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from helpers import produce_board, check_num, board_in_play, games_menu
+from helpers import produce_board, check_num, board_in_play, games_menu, process_solution
 import json
 
 
@@ -31,14 +31,16 @@ class CLI:
         u_name = input("What is your user name?")
         new_user = None
         print("Thanks!")
-        usernames = [u.name for u in session.query(User)]
-        if u_name in usernames:
+        users = [u for u in session.query(User).all()]
+        usernames = [u.name.lower() for u in users]
+        if u_name.lower() in usernames:
             print(f"Is that you, {u_name}?!")
             special_word = input("What is your special word? \n Case doesn't matter \n Type here: ")
-            user = session.query(User).filter_by(name=u_name).first()
-            if special_word.lower() == user.special.lower():
+            ind = usernames.index(u_name.lower())
+            potential_user = users[ind]
+            if special_word.lower() == potential_user.special.lower():
                 print(f"Welcome Back {u_name}!")
-                return user
+                return potential_user
             else:
                 print("You forgot your special word!")
                 #add looping, second try
@@ -80,6 +82,7 @@ class CLI:
             if choice == "prev":
                 games = session.query(Game).filter_by(user_id=user.id).all()
                 print(" ID |   RESULT   | TIME (s) ")
+                game_ids = []
                 for g in games:
                     result_str = " " + g.result
                     length_of_str = len(result_str)
@@ -87,6 +90,7 @@ class CLI:
                     id = str(g.id)+" "
                     length_of_id = len(id)
                     final_string = " "*(4-len(id))+id+"|"
+                    game_ids.append(g.id)
                     if g.duration() == 0 or g.duration() == 1:
                         print(final_string+final_str+"|       N/A")
                     else:
@@ -95,7 +99,31 @@ class CLI:
                         last_string = " "*(10-length_of_dur) + dur
                         print(final_string+final_str+"|"+last_string)
                 choice = games_menu()
-                quit()
+                if choice=="exit":
+                    quit()
+                elif choice=="users":
+                    users = session.query(User).all()
+                    for u in users:
+                        print(u.id +". " + u.name)
+                    choice =""
+                elif int(choice) in game_ids:
+                    selected_game = session.query(Game).filter_by(id=int(choice)).first()
+                    board_in_play(json.loads(selected_game.groupings), json.loads(selected_game.pairs), process_solution(json.loads(selected_game.solution_dict)))
+                    print("NOTES:\n")
+                    notes = selected_game.notes
+                    if notes:
+                        for n in notes:
+                            print(n.content + "\n")
+                    else:
+                        print("No notes yet!\n")
+                        if input("Would you like to make an new note (y/n): ") == "y":
+                            comment = input("Type your note here: ")
+                            new_note = Note(content=comment, game_id=selected_game.id)
+                            session.add(new_note)
+                            session.commit()
+                            choice=''
+
+                
                 #retrieve all games
                 #print out all games
                 #print out individual game board and existing notes
@@ -146,6 +174,12 @@ class CLI:
                     if result == "won":
                         found_game.result = "won"
                         print("\033[0;37;41mYOU WON!\033[1;37;40m")
+                        if input("Would you like to make an new note (y/n): ") == "y":
+                            comment = input("Type your note here: ")
+                            new_note = Note(content=comment, game_id=found_game.id)
+                            session.add(new_note)
+                            session.commit()
+                            choice=''
                         
                     else:
                         found_game.result = "lost"

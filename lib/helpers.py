@@ -595,3 +595,11 @@ def games_menu():
     print('\033[1;32;40m|To see another user\'s results, type "users"|\n')
     print('\033[1;32;40m|To exit type "exit" |\033[0;37;40m \n')
     return input("Type your choice here: ")
+
+
+def process_solution(dict):
+    keys = list(dict.keys())
+    new_dict={}
+    for k in keys:
+        new_dict[int(k)]=dict[k]
+    return new_dict
