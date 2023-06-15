@@ -3,7 +3,7 @@
 from models import User, Game, Note
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from helpers import produce_board, check_num, board_in_play, games_menu, process_solution
+from helpers import produce_board, check_num, board_in_play, games_menu, process_solution, check_input_num
 import json
 
 
@@ -28,7 +28,7 @@ class CLI:
     def get_name(self):
         print("Welcome to our Kenken App")
         print("Please give us your name!")
-        u_name = input("What is your user name?")
+        u_name = input("What is your user name? ")
         new_user = None
         print("Thanks!")
         users = [u for u in session.query(User).all()]
@@ -103,9 +103,30 @@ class CLI:
                     quit()
                 elif choice=="users":
                     users = session.query(User).all()
-                    for u in users:
-                        print(u.id +". " + u.name)
-                    choice =""
+                    print("ID | NAME ")
+                    print("-----------")
+                    for u in users: 
+                        print(str(u.id) +". " + u.name)
+                    choice = input("choose an id to see games results, or any other key to go back up to the main menu")
+                    if check_num(choice):
+                        #error handling for number entered not in list
+                        games = session.query(Game).filter_by(user_id=check_num(choice)).all()
+                        for g in games:
+                            result_str = " " + g.result
+                            length_of_str = len(result_str)
+                            final_str = result_str + " "*(12-length_of_str)
+                            id = str(g.id)+" "
+                            length_of_id = len(id)
+                            final_string = " "*(4-len(id))+id+"|"
+                            if g.duration() == 0 or g.duration() == 1:
+                                print(final_string+final_str+"|       N/A")
+                            else:
+                                dur = str(g.duration())+" "
+                                length_of_dur = len(dur)
+                                last_string = " "*(10-length_of_dur) + dur
+                                print(final_string+final_str+"|"+last_string)
+                    else:
+                        choice=""
                 elif int(choice) in game_ids:
                     selected_game = session.query(Game).filter_by(id=int(choice)).first()
                     board_in_play(json.loads(selected_game.groupings), json.loads(selected_game.pairs), process_solution(json.loads(selected_game.solution_dict)))
@@ -117,19 +138,13 @@ class CLI:
                     else:
                         print("No notes yet!\n")
                         if input("Would you like to make an new note (y/n): ") == "y":
+                            #error handling - or different flow - I read this too fast and just entered a note and then my note got lost
                             comment = input("Type your note here: ")
                             new_note = Note(content=comment, game_id=selected_game.id)
                             session.add(new_note)
                             session.commit()
                             choice=''
 
-                
-                #retrieve all games
-                #print out all games
-                #print out individual game board and existing notes
-                #add a note to a game
-                #go back to main menu
-                pass
         
         quit()
 
@@ -159,10 +174,15 @@ class CLI:
                     quit()
                 choice = check_num(choice)
                
-            if solution.get(choice) == " ":   
+            if solution.get(choice) == " ":  
                 print("What number will you place here?")
-                num = input("Type your choice here: ")
-                #needs error handling
+                num = None
+                while (not num):
+                    num = input("Type your choice here: ")
+                    num = check_input_num(num)
+                
+                # create logic to evaluate if the move is correct - if not give feedback to choose a different number 
+                
                 solution[choice]=int(num)
                 board_in_play(gr, pa, solution)
                 if " " not in solution.values():

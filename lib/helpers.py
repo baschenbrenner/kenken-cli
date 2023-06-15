@@ -11,6 +11,20 @@ def check_num(x):
     else:
         return None
     
+def check_input_num(x):
+    if x:
+        try:
+            x=int(x)
+            if x in [1,2,3,4]:
+                return x
+            else: 
+                return None
+        except ValueError:
+            print('Must input a number!')
+            return None
+    else:
+        return None
+    
 # Random functions
 def random_50():
     num = random.random()
